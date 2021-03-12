@@ -1,0 +1,280 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: External Data API
+  description: An API for accessing external data proviers
+servers:
+  - url: 'http://localhost:3000/api/v1'
+security:
+  - ApiKeyAuth: []
+paths:
+  /ping:
+    get:
+      summary: Ping server to see if it is awake
+      description: its Ping
+      tags: ['General']
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: 
+                type: string 
+              example: "pong"
+  /banks/lookup:
+    post:
+      summary: create a new track
+      description: create a new track
+      tags: ["Bank Data"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/post_banklookup'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bank_response'
+        '500':
+          $ref: '#/components/responses/500'
+  /changePassword:
+    post:
+      summary: changes user's password
+      description: updates the user's okta password
+      tags: ["Change Password"]
+      parameters:
+        - name: uid
+          in: query
+          description: OKTA UID of respective user
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/post_changePassword'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/changePassword_response'
+        '500':
+          $ref: '#/components/responses/500'
+components:
+  responses:
+    '500':
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InternalServerError'
+            
+  schemas:
+    post_banklookup:
+      title: lookup
+      type: object
+      required: [bank_code, name]
+      properties:
+        max: 
+          type: number
+          description: The "max" tag defines the maximum number of entities the response may contain. Users can set the maximum limit using this tag in the request. Accuity has set a maximum threshold of 1000 for this input tag. If the user sets it to more than the maximum 1000, the response will return message code 104, “The maximum allowed for gpws_query-max input is 1000. Please modify it and resubmit your request”. If no value is entered in this field, then the maximum will default to 100.
+          example: 1000
+        bank_code:
+          type: object
+          description: Either name or bank_code is required
+          properties:
+            type: 
+              type: string
+              description: Type of bank code.  "any" is the default value that will lookup the value as any type of bank code.
+              example: "ABA"
+            value: 
+              type: string
+              description: bank code to look up.
+              example: "021101108"
+        name: 
+          type: string
+          description: the financial institution’s name that is included in the search.  Either name or bank_code are required.
+          example: "Wells Fargo"
+        branch: 
+          type: string
+          description: the name of the branch of the financial institution’s location
+          example: ""
+        city: 
+          type: string
+          description: defines the name of the city of the financial institution’s location
+          example: "Wells Fargo"
+        state_prov_reg: 
+          type: string
+          description: the name of the state, province or region of the financial institution’s location
+          example: "Wells Fargo"
+        country: 
+          type: string
+          description: the country of the financial institution’s location
+          example: "Wells Fargo"
+        postal_code: 
+          type: string
+          description: the postal code or zip code of the financial numeric institution’s location
+          example: "Wells Fargo"
+
+    bank_response:
+      title: Bank List
+      type: object
+      properties:
+        banks_total:
+          type: number
+          description: number of banks returned
+          example: 45
+        bank:
+          type: array
+          items:
+            type: object
+            properties:
+              general:
+                type: object
+                description: detail all of the general information on the financial institution
+                properties:
+                  name: 
+                    type: string
+                    description: the full name of the financial institution
+                    example: "Wells Fargo Bank, National Association"
+                  name_abbr: 
+                    type: string
+                    description: the abbreviated name of the financial institution
+                    example: "Wells Fargo Bk NA"
+                  office_type: 
+                    type: string
+                    description: the type of office of the specific location of the financial institution
+                  institution_type: 
+                    type: string
+                    description: the type of financial institution
+                  address_one: 
+                    type: string
+                    description: the financial institution’s address
+                  address_two: 
+                    type: string
+                    description: more address information
+                  city: 
+                    type: string
+                  state_prov_reg: 
+                    type: string
+                    description: state, province or region value
+                  state_prov_reg_abbr: 
+                    type: string
+                    description: the abbreviated state, province or region value
+                  postal_code: 
+                    type: string
+                    description: postal code or zip code
+                  country: 
+                    type: string
+                  country_iso: 
+                    type: string
+                  branch: 
+                    type: string
+                    description: branch name of the financial institution
+                  department_List: 
+                    type: object
+                    description: information on the various departments and contacts located at the financial institution
+                  sanctions_list: 
+                    type: object
+                    description: indicate whether the institution is sanctioned by any of the four primary sanctions list issuers
+              payments:
+                type: object
+                description: detail the payments information, such as payment codes, code types, clearing system participation, and additional routing information
+              
+          description: banks that fulfill request
+          example: 
+
+    NotFoundError:
+      required:
+        - name
+        - message
+        - debugId
+      properties:
+        name:
+          type: string
+          description: A human-readable, unique name for the error
+          example: NOT_FOUND_ERR
+        debugId:
+          type: string
+          description: A unique error identifier generated on the server-side and logged for correlation purposes.
+          example: 3e11297b3c7c16cd727511b9c8d9a086
+        message:
+          type: string
+          description: A human-readable message, describing the error
+          example: Party not found.
+    InternalServerError:
+      required:
+        - name
+        - message
+        - debugId
+      properties:
+        name:
+          type: string
+          description: A human-readable, unique name for the error
+          example: SERVER_ERR
+        debugId:
+          type: string
+          description: A unique error identifier generated on the server-side and logged for correlation purposes.
+          example: 3e11297b3c7c16cd727511b9c8d9a086
+        message:
+          type: string
+          description: A human-readable message, describing the error
+          example: Internal Server Error.
+          
+    post_changePassword:
+      title: change Password
+      type: object
+      required: [uid]
+      properties:
+        oldPassword:
+          type: object
+          description: Old password
+          properties:
+            value: 
+              type: string
+              description: old password for logged in user.
+              example: "Abcdef12345!"
+        newPassword:
+          type: object
+          description: New password
+          properties:
+            value: 
+              type: string
+              description: New password for logged in user.
+              example: "Welcome123$"
+              
+    changePassword_response:
+      title: change passowrd response
+      type: object
+      properties:
+        statusCode:
+          type: number
+          description: status code of response
+          example: 200
+        body:
+          type: object
+          properties:
+            name:
+              type: object
+              description: response name respective to API
+              properties:
+                value: 
+                  type: string
+                  description: response name
+                  example: "CHANGE_PASSWORD_SUCCESS"
+            message:
+              type: object
+              description: response message
+              properties:
+                value: 
+                  type: string
+                  description: response message
+                  example: "Password changed successfully"
