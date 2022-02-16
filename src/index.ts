@@ -8,4 +8,4 @@ process.env.API_BASE = '/api/v1/'
 
 
 startAPI()
-    .then(() => console.log('API Started'))
+    .then(() => console.log('API Request Started'))
